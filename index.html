@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>iOS Calculator</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden}
+body{display:flex;justify-content:center}
+.app{width:min(100vw,520px);height:100dvh;padding:18px 16px 12px;display:flex;flex-direction:column}
+.top{height:58px;display:flex;justify-content:space-between;gap:10px}
+.left{display:flex;flex-direction:column}
+.counter{font-size:14px;color:#a5a5a5}
+.sum{font-size:13px;color:#444;margin-top:3px}
+.history{font-size:15px;color:#555;text-align:right;overflow:hidden;white-space:nowrap}
+.display{height:24%;min-height:120px;display:flex;align-items:flex-end;justify-content:flex-end;text-align:right;font-size:clamp(48px,14vw,76px);font-weight:300;overflow:hidden;white-space:nowrap;padding-bottom:16px}
+.keys{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:8px}
+button{border:0;border-radius:50%;font-size:clamp(21px,7vw,30px);font-family:Arial,sans-serif;touch-action:manipulation;cursor:pointer;transition:filter .08s,transform .05s}
+button:active{filter:brightness(1.3);transform:scale(.96)}
+.gray{background:#a5a5a5;color:#000}
+.dark{background:#333;color:#fff}
+.orange{background:#ff9f0a;color:#fff}
+.zero{grid-column:span 2;border-radius:999px;text-align:left;padding-left:12%}
+@media(min-width:521px){
+ .app{padding-left:24px;padding-right:24px}
+ .keys{gap:10px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="left">
+      <div class="counter" id="counter">Введено чисел: 0</div>
+      <div class="sum" id="sum">Сумма: 0</div>
+    </div>
+    <div class="history" id="history"></div>
+  </div>
+  <div class="display" id="display">0</div>
+  <div class="keys">
+    <button class="gray" onclick="press('AC')">AC</button>
+    <button class="gray" onclick="press('back')">⌫</button>
+    <button class="gray" onclick="press('%')">%</button>
+    <button class="orange" onclick="press('/')">÷</button>
+
+    <button class="dark" onclick="press('7')">7</button>
+    <button class="dark" onclick="press('8')">8</button>
+    <button class="dark" onclick="press('9')">9</button>
+    <button class="orange" onclick="press('*')">×</button>
+
+    <button class="dark" onclick="press('4')">4</button>
+    <button class="dark" onclick="press('5')">5</button>
+    <button class="dark" onclick="press('6')">6</button>
+    <button class="orange" onclick="press('-')">−</button>
+
+    <button class="dark" onclick="press('1')">1</button>
+    <button class="dark" onclick="press('2')">2</button>
+    <button class="dark" onclick="press('3')">3</button>
+    <button class="orange" onclick="press('+')">+</button>
+
+    <button class="dark zero" onclick="press('0')">0</button>
+    <button class="dark" onclick="press('.')">,</button>
+    <button class="orange" onclick="press('=')">=</button>
+  </div>
+</div>
+
+<script>
+let input="0", resultShown=false;
+
+const $=id=>document.getElementById(id);
+
+function pretty(s){
+  return s.replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−").replace(/\./g,",");
+}
+
+function refresh(){
+  $("display").textContent=pretty(input);
+  if(input==="0"){
+    $("counter").textContent="Введено чисел: 0";
+    $("sum").textContent="Сумма: 0";
+    return;
+  }
+  const parts=input.match(/[+-]?\d+(?:\.\d+)?/g)||[];
+  $("counter").textContent=`Введено чисел: ${parts.length}`;
+  try{
+    let total=parts.reduce((a,x)=>a+Number(x),0);
+    total=Number.isInteger(total)?total:Number(total.toFixed(6));
+    $("sum").textContent=`Сумма: ${String(total).replace(".",",")}`;
+  }catch{
+    $("sum").textContent="Сумма: 0";
+  }
+}
+
+function number(n){
+  if(input==="0"||resultShown){input=n;resultShown=false}
+  else input+=n;
+  refresh();
+}
+
+function decimal(){
+  if(resultShown){input="0.";resultShown=false;refresh();return}
+  const parts=input.split(/[+\-*\/%]/);
+  if(!parts[parts.length-1].includes(".")){
+    input += parts[parts.length-1]==="" ? "0." : ".";
+  }
+  refresh();
+}
+
+function operator(op){
+  resultShown=false;
+  let last=input.at(-1);
+  if(last==="."){input+="0";last="0"}
+  if("+-*/%".includes(last)) input=input.slice(0,-1)+op;
+  else input+=op;
+  refresh();
+}
+
+function calculate(){
+  try{
+    let expr=input;
+    if("+-*/.%".includes(expr.at(-1))) expr=expr.slice(0,-1);
+    if(!expr)expr="0";
+
+    $("history").textContent=pretty(expr)
+      .replace(/([×÷−+])/g," $1 ");
+
+    // Only expressions produced by the calculator buttons reach here.
+    let js=expr.replace(/%/g,"/100");
+    let value=Function('"use strict"; return ('+js+')')();
+    if(!Number.isFinite(value))throw new Error();
+    value=Number(value.toFixed(8));
+    input=String(value);
+    resultShown=true;
+    refresh();
+  }catch{
+    $("display").textContent="Ошибка";
+    $("counter").textContent="Введено чисел: 0";
+    $("sum").textContent="Сумма: 0";
+    input="0";
+  }
+}
+
+function back(){
+  if(resultShown){$("history").textContent="";resultShown=false}
+  input=input.length>1?input.slice(0,-1):"0";
+  refresh();
+}
+
+function press(x){
+  if(x==="AC"){input="0";resultShown=false;$("history").textContent="";refresh()}
+  else if(x==="back")back();
+  else if(x==="=")calculate();
+  else if(x===".")decimal();
+  else if("+-*/%".includes(x))operator(x);
+  else number(x);
+}
+
+document.addEventListener("keydown",e=>{
+  if(/[0-9]/.test(e.key))number(e.key);
+  else if(e.key===".")decimal();
+  else if("+-*/%".includes(e.key))operator(e.key);
+  else if(e.key==="Enter"||e.key==="=")calculate();
+  else if(e.key==="Backspace")back();
+  else if(e.key==="Escape"){$("history").textContent="";input="0";resultShown=false;refresh()}
+});
+refresh();
+</script>
+</body>
+</html>
