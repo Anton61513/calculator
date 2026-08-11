@@ -145,27 +145,274 @@ function calculate(){
 function back(){
   if(resultShown){$("history").textContent="";resultShown=false}
   input=input.length>1?input.slice(0,-1):"0";
-  refresh();
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Антон 29253 онлайн калькулятор</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;background:#000;color:#f5f5f7;font-family:Arial,sans-serif;overflow:hidden}
+body{display:flex;justify-content:center}
+.app{width:min(100vw,560px);height:100dvh;padding:14px 18px max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column}
+.top{height:54px;display:flex;justify-content:space-between;align-items:flex-start;flex:none}
+.info{font-size:15px;line-height:1.55;color:#9a9a9f}
+.historyBtn{border:0;border-radius:18px;background:#242426;color:#eee;padding:11px 17px;font-size:14px;box-shadow:inset 0 1px rgba(255,255,255,.04);touch-action:manipulation}
+.historyMini{position:absolute;right:18px;top:70px;width:58%;max-height:72px;overflow:hidden;text-align:right;color:#666;font-size:14px;line-height:1.35;pointer-events:none}
+.displayWrap{flex:1;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.displayScroller{height:100%;overflow-y:auto;overflow-x:hidden;display:flex;align-items:flex-end;touch-action:pan-y;scrollbar-width:none;padding:8px 0 0}
+.displayScroller::-webkit-scrollbar{display:none}
+.display{width:100%;text-align:right;font-weight:300;font-size:clamp(27px,7.2vw,39px);line-height:1.15;word-break:normal;overflow-wrap:anywhere;padding:0 2px 5px;user-select:none}
+.line{display:block;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:clip;min-height:1.15em}
+.caret{display:inline-block;width:2px;height:.88em;background:#ff7a00;margin:0 1px;vertical-align:-.06em;border-radius:2px;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.intermediate{height:58px;flex:none;display:flex;justify-content:flex-end;align-items:flex-end;padding:0 8px 7px 0;overflow:hidden}
+.intermediateBox{width:76%;text-align:right;min-width:0}
+.intermediateExpr{font-size:14px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px}
+.intermediateResult{font-size:25px;color:#777;font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:29px}
+.keys{width:100%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:10px;height:min(49dvh,500px);min-height:370px;flex:none}
+button.key{border:0;min-width:0;min-height:0;border-radius:25px;background:#242426;color:#f4f4f4;font-size:clamp(20px,6vw,28px);font-family:Arial,sans-serif;box-shadow:inset 0 1px rgba(255,255,255,.025),0 2px 3px rgba(0,0,0,.5);touch-action:manipulation;transition:transform .07s,filter .07s}
+button.key:active{transform:scale(.965);filter:brightness(1.25)}
+.key.orange{color:#ff7a00}
+.key.equals{background:#ff7a00;color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.18)}
+.key.equals:active{filter:brightness(1.1)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.98);z-index:20;padding:20px 18px}
+.modal.show{display:flex;flex-direction:column}
+.modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modalTitle{font-size:22px}
+.modalActions{display:flex;gap:7px}
+.smallBtn{border:0;border-radius:12px;background:#242426;color:#fff;padding:9px 12px;font-size:13px}
+.historyList{overflow:auto;flex:1}
+.historyItem{padding:14px 3px;border-bottom:1px solid #1c1c1e;text-align:right}
+.historyExpr{font-size:17px;color:#ddd;overflow-wrap:anywhere}
+.historyMeta{font-size:13px;color:#777;margin-top:5px}
+.empty{text-align:center;color:#555;margin-top:40px}
+@media(max-width:390px){
+ .app{padding-left:14px;padding-right:14px}
+ .keys{gap:8px;height:min(47dvh,455px);min-height:350px}
+ button.key{border-radius:22px}
+ .intermediate{height:54px}
+ .intermediateResult{font-size:23px}
 }
-
-function press(x){
-  if(x==="AC"){input="0";resultShown=false;$("history").textContent="";refresh()}
-  else if(x==="back")back();
-  else if(x==="=")calculate();
-  else if(x===".")decimal();
-  else if("+-*/%".includes(x))operator(x);
-  else number(x);
+@media(min-width:600px){
+ .app{padding-left:24px;padding-right:24px}
+ .keys{gap:11px}
 }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="info">
+      <div id="counter">Введено чисел: 0</div>
+      <div id="sum">Сумма: 0</div>
+    </div>
+    <button class="historyBtn" onclick="openHistory()">История</button>
+  </div>
+  <div class="historyMini" id="historyMini"></div>
 
-document.addEventListener("keydown",e=>{
-  if(/[0-9]/.test(e.key))number(e.key);
-  else if(e.key===".")decimal();
-  else if("+-*/%".includes(e.key))operator(e.key);
-  else if(e.key==="Enter"||e.key==="=")calculate();
-  else if(e.key==="Backspace")back();
-  else if(e.key==="Escape"){$("history").textContent="";input="0";resultShown=false;refresh()}
+  <div class="displayWrap">
+    <div class="displayScroller" id="displayScroller">
+      <div class="display" id="display"></div>
+    </div>
+  </div>
+
+  <div class="intermediate">
+    <div class="intermediateBox">
+      <div class="intermediateExpr" id="intermediateExpr"></div>
+      <div class="intermediateResult" id="intermediateResult"></div>
+    </div>
+  </div>
+
+  <div class="keys">
+    <button class="key" onclick="press('AC')">C</button>
+    <button class="key" onclick="press('back')">⌫</button>
+    <button class="key orange" onclick="press('%')">%</button>
+    <button class="key orange" onclick="press('/')">÷</button>
+
+    <button class="key" onclick="press('7')">7</button>
+    <button class="key" onclick="press('8')">8</button>
+    <button class="key" onclick="press('9')">9</button>
+    <button class="key orange" onclick="press('*')">×</button>
+
+    <button class="key" onclick="press('4')">4</button>
+    <button class="key" onclick="press('5')">5</button>
+    <button class="key" onclick="press('6')">6</button>
+    <button class="key orange" onclick="press('-')">−</button>
+
+    <button class="key" onclick="press('1')">1</button>
+    <button class="key" onclick="press('2')">2</button>
+    <button class="key" onclick="press('3')">3</button>
+    <button class="key orange" onclick="press('+')">+</button>
+
+    <button class="key orange" onclick="press('sign')">±</button>
+    <button class="key" onclick="press('0')">0</button>
+    <button class="key" onclick="press('.')">,</button>
+    <button class="key equals" onclick="press('=')">=</button>
+  </div>
+</div>
+
+<div class="modal" id="historyModal">
+  <div class="modalHead">
+    <div class="modalTitle">История</div>
+    <div class="modalActions">
+      <button class="smallBtn" onclick="clearHistory()">Очистить</button>
+      <button class="smallBtn" onclick="closeHistory()">Закрыть</button>
+    </div>
+  </div>
+  <div class="historyList" id="historyList"></div>
+</div>
+
+<script>
+let input="";
+let cursorPos=0;
+let resultShown=false;
+let history=[];
+const $=id=>document.getElementById(id);
+
+function save(){
+  localStorage.setItem("anton29253_state",JSON.stringify({input,resultShown,cursorPos}));
+  localStorage.setItem("anton29253_history",JSON.stringify(history));
+}
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem("anton29253_state")||"null");
+    const h=JSON.parse(localStorage.getItem("anton29253_history")||"[]");
+    if(s){input=typeof s.input==="string"?s.input:"";resultShown=!!s.resultShown;cursorPos=Math.max(0,Math.min(input.length,Number(s.cursorPos)||0))}
+    history=Array.isArray(h)?h:[];
+  }catch(e){input="";history=[];cursorPos=0}
+}
+function pretty(s){
+  return String(s).replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−").replace(/\./g,",");
+}
+function numbers(s){return s.match(/\d+(?:\.\d*)?/g)||[]}
+function buildLines(s){
+  const re=/\d+(?:\.\d*)?|[+\-*/%]/g, tokens=[]; let m;
+  while((m=re.exec(s))) tokens.push({text:m[0],start:m.index,end:m.index+m[0].length,isNum:/^\d/.test(m[0])});
+  const lines=[]; let line="", count=0, start=0;
+  for(const t of tokens){
+    if(t.isNum && count===5){lines.push({text:line,start,end:t.start});line="";count=0;start=t.start}
+    line+=t.text;if(t.isNum)count++;
+  }
+  if(line||!lines.length)lines.push({text:line,start,end:s.length});
+  return lines;
+}
+function render(){
+  const d=$("display"); d.innerHTML="";
+  const lines=buildLines(input);
+  lines.forEach(item=>{
+    const div=document.createElement("div");div.className="line";
+    for(let i=0;i<item.text.length;i++){
+      const sp=document.createElement("span");sp.dataset.pos=item.start+i;
+      sp.textContent=pretty(item.text[i]);div.appendChild(sp);
+    }
+    if(cursorPos>=item.start && cursorPos<=item.end){
+      const caret=document.createElement("span");caret.className="caret";
+      const index=Math.max(0,Math.min(div.children.length,cursorPos-item.start));
+      div.insertBefore(caret,div.children[index]||null);
+    }
+    d.appendChild(div);
+  });
+  if(!input){
+    const last=d.lastElementChild||document.createElement("div");
+    if(!last.parentNode){last.className="line";d.appendChild(last)}
+    if(!last.querySelector(".caret")){const c=document.createElement("span");c.className="caret";last.appendChild(c)}
+  }
+  requestAnimationFrame(()=>{const sc=$("displayScroller");sc.scrollTop=sc.scrollHeight});
+  updateInfo();updateIntermediate();save();
+}
+function updateInfo(){
+  const ns=numbers(input);
+  $("counter").textContent=`Введено чисел: ${ns.length}`;
+  let total=0;ns.forEach(x=>total+=Number(x));
+  $("sum").textContent=`Сумма: ${Number.isInteger(total)?total:Number(total.toFixed(6))}`.replace(".",",");
+  $("historyMini").innerHTML=history.slice(0,3).map(x=>`<div>${x.expression} = ${x.result}</div>`).join("");
+}
+function evaluate(expr){
+  let e=expr.replace(/([+\-*/%])$/,"");
+  if(!e)e="0";
+  let js=e.replace(/%/g,"/100");
+  const v=Function('"use strict";return ('+js+')')();
+  if(!Number.isFinite(v))throw Error();
+  return Number(Number(v).toFixed(8));
+}
+function updateIntermediate(){
+  const ex=$("intermediateExpr"),res=$("intermediateResult");
+  if(!input || !/[+\-*/%]/.test(input)){ex.textContent="";res.textContent="";return}
+  try{ex.textContent=pretty(input);res.textContent="= "+pretty(evaluate(input));}
+  catch{ex.textContent=pretty(input);res.textContent=""}
+}
+function insert(v){
+  if(resultShown){input="";resultShown=false;cursorPos=0}
+  input=input.slice(0,cursorPos)+v+input.slice(cursorPos);cursorPos+=v.length;render();
+}
+function press(v){
+  if(v==="AC"){input="";cursorPos=0;resultShown=false;render();return}
+  if(v==="back"){
+    if(resultShown){input="";resultShown=false;cursorPos=0}
+    else if(cursorPos>0){input=input.slice(0,cursorPos-1)+input.slice(cursorPos);cursorPos--}
+    render();return
+  }
+  if(v==="sign"){toggleSign();return}
+  if(v==="="){calculate();return}
+  if(/^\d$/.test(v)){insert(v);return}
+  if(v==="."){decimal();return}
+  operator(v);
+}
+function decimal(){
+  if(resultShown){input="0.";cursorPos=2;resultShown=false;render();return}
+  const left=input.slice(0,cursorPos),part=left.split(/[+\-*/%]/).pop();
+  if(part.includes("."))return;
+  insert(part===""?"0.":".");
+}
+function operator(op){
+  if(resultShown){resultShown=false}
+  if(!input){input="0";cursorPos=1}
+  const prev=input[cursorPos-1];
+  if(prev && "+-*/%".includes(prev)){input=input.slice(0,cursorPos-1)+op+input.slice(cursorPos)}
+  else{input=input.slice(0,cursorPos)+op+input.slice(cursorPos);cursorPos++}
+  render();
+}
+function toggleSign(){
+  let a=input.slice(0,cursorPos),b=input.slice(cursorPos),m=a.match(/(?:^|[+\-*/%])(\d*\.?\d*)$/);
+  if(!m||m[1]==="")return;
+  const start=cursorPos-m[1].length;
+  if(start>0 && input[start-1]==="-"){input=input.slice(0,start-1)+input.slice(start);cursorPos--}
+  else{input=input.slice(0,start)+"-"+input.slice(start);cursorPos++}
+  render();
+}
+function calculate(){
+  if(!input)return;
+  try{
+    const expr=input.replace(/[+\-*/%.]$/,"")||"0";
+    const value=evaluate(expr);
+    const item={expression:pretty(expr),result:pretty(String(value)),count:numbers(expr).length,time:new Date().toLocaleString("ru-RU")};
+    history.unshift(item);history=history.slice(0,100);
+    input=String(value);cursorPos=input.length;resultShown=true;render();renderHistory();
+  }catch{$("intermediateResult").textContent="Ошибка"}
+}
+function openHistory(){$("historyModal").classList.add("show");renderHistory()}
+function closeHistory(){$("historyModal").classList.remove("show")}
+function clearHistory(){history=[];save();renderHistory();updateInfo()}
+function renderHistory(){
+  const list=$("historyList");
+  if(!history.length){list.innerHTML='<div class="empty">История пуста</div>';return}
+  list.innerHTML=history.map((x,i)=>`<div class="historyItem"><div class="historyExpr">${i+1}. ${x.expression} = ${x.result}</div><div class="historyMeta">Чисел: ${x.count} · ${x.time}</div></div>`).join("");
+}
+$("displayScroller").addEventListener("click",e=>{
+  const sp=e.target.closest("[data-pos]");
+  if(!sp)return;
+  const r=sp.getBoundingClientRect();
+  cursorPos=Number(sp.dataset.pos)+(e.clientX-r.left>r.width/2?1:0);
+  resultShown=false;render();
 });
-refresh();
+let touchStartY=0,touchStartScroll=0;
+$("displayScroller").addEventListener("touchstart",e=>{touchStartY=e.touches[0].clientY;touchStartScroll=$("displayScroller").scrollTop},{passive:true});
+$("displayScroller").addEventListener("touchmove",e=>{const dy=touchStartY-e.touches[0].clientY;$("displayScroller").scrollTop=touchStartScroll+dy},{passive:true});
+load();render();renderHistory();
 </script>
 </body>
 </html>
