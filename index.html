@@ -31,16 +31,14 @@ body{display:flex;justify-content:center}
   user-select:none;
 }
 
-/* Элемент строки с гарантией удерживания в пределах бортов */
+/* Фиксированный ряд с подгонкой размера */
 .line{
   display:block;
   width:100%;
-  max-width:100%;
   white-space:nowrap;
-  min-height:1.25em;
+  min-height:1.3em;
   letter-spacing:0.3px;
-  overflow:hidden;
-  transition:font-size 0.05s ease-out;
+  overflow:visible;
 }
 
 .caret{display:inline-block;width:2px;height:.85em;background:#ff7a00;margin:0 1px;vertical-align:-.05em;border-radius:2px;animation:blink 1s step-end infinite}
@@ -142,14 +140,14 @@ const $=id=>document.getElementById(id);
 
 function save(){
   try{
-    localStorage.setItem("anton29253_state_v4",JSON.stringify({input,resultShown,cursorPos}));
-    localStorage.setItem("anton29253_history_v4",JSON.stringify(history));
+    localStorage.setItem("anton29253_state_v5",JSON.stringify({input,resultShown,cursorPos}));
+    localStorage.setItem("anton29253_history_v5",JSON.stringify(history));
   }catch(e){}
 }
 function load(){
   try{
-    const s=JSON.parse(localStorage.getItem("anton29253_state_v4")||"null");
-    const h=JSON.parse(localStorage.getItem("anton29253_history_v4")||"[]");
+    const s=JSON.parse(localStorage.getItem("anton29253_state_v5")||"null");
+    const h=JSON.parse(localStorage.getItem("anton29253_history_v5")||"[]");
     if(s){input=typeof s.input==="string"?s.input:"";resultShown=!!s.resultShown;cursorPos=Math.max(0,Math.min(input.length,Number(s.cursorPos)||0))}
     history=Array.isArray(h)?h:[];
   }catch(e){input="";history=[];cursorPos=0}
@@ -194,7 +192,6 @@ function render(){
     if(!last.querySelector(".caret")){const c=document.createElement("span");c.className="caret";last.appendChild(c)}
   }
 
-  // Оптимизация размера шрифта под границы (Auto-Scale ряда)
   adjustFontSize();
 
   requestAnimationFrame(()=>{const sc=$("displayScroller");sc.scrollTop=sc.scrollHeight});
@@ -202,16 +199,17 @@ function render(){
 }
 
 function adjustFontSize(){
-  const containerWidth=$("display").clientWidth;
+  const container=$("display");
+  const containerWidth=container.getBoundingClientRect().width - 8;
   const lines=document.querySelectorAll(".line");
   
   lines.forEach(line=>{
-    let fontSize=24; // Максимальный базовый размер
+    let fontSize=28;
     line.style.fontSize=fontSize+"px";
     
-    // Постепенно уменьшаем размер всего ряда, пока он не станет помещаться в борта
-    while(line.scrollWidth > containerWidth && fontSize > 10){
-      fontSize-=1;
+    // Динамически уменьшаем шрифт ряда, пока он полностью не влезет в боковые границы
+    while((line.getBoundingClientRect().width > containerWidth || line.scrollWidth > containerWidth) && fontSize > 11){
+      fontSize-=0.5;
       line.style.fontSize=fontSize+"px";
     }
   });
