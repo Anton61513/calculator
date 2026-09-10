@@ -2,204 +2,82 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#000000">
-<title>iOS Calculator</title>
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden}
-body{display:flex;justify-content:center}
-.app{width:min(100vw,520px);height:100dvh;padding:18px 16px 12px;display:flex;flex-direction:column}
-.top{height:58px;display:flex;justify-content:space-between;gap:10px}
-.left{display:flex;flex-direction:column}
-.counter{font-size:14px;color:#a5a5a5}
-.sum{font-size:13px;color:#444;margin-top:3px}
-.history{font-size:15px;color:#555;text-align:right;overflow:hidden;white-space:nowrap}
-.display{height:24%;min-height:120px;display:flex;align-items:flex-end;justify-content:flex-end;text-align:right;font-size:clamp(48px,14vw,76px);font-weight:300;overflow:hidden;white-space:nowrap;padding-bottom:16px}
-.keys{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:8px}
-button{border:0;border-radius:50%;font-size:clamp(21px,7vw,30px);font-family:Arial,sans-serif;touch-action:manipulation;cursor:pointer;transition:filter .08s,transform .05s}
-button:active{filter:brightness(1.3);transform:scale(.96)}
-.gray{background:#a5a5a5;color:#000}
-.dark{background:#333;color:#fff}
-.orange{background:#ff9f0a;color:#fff}
-.zero{grid-column:span 2;border-radius:999px;text-align:left;padding-left:12%}
-@media(min-width:521px){
- .app{padding-left:24px;padding-right:24px}
- .keys{gap:10px}
-}
-</style>
-</head>
-<body>
-<div class="app">
-  <div class="top">
-    <div class="left">
-      <div class="counter" id="counter">Введено чисел: 0</div>
-      <div class="sum" id="sum">Сумма: 0</div>
-    </div>
-    <div class="history" id="history"></div>
-  </div>
-  <div class="display" id="display">0</div>
-  <div class="keys">
-    <button class="gray" onclick="press('AC')">AC</button>
-    <button class="gray" onclick="press('back')">⌫</button>
-    <button class="gray" onclick="press('%')">%</button>
-    <button class="orange" onclick="press('/')">÷</button>
-
-    <button class="dark" onclick="press('7')">7</button>
-    <button class="dark" onclick="press('8')">8</button>
-    <button class="dark" onclick="press('9')">9</button>
-    <button class="orange" onclick="press('*')">×</button>
-
-    <button class="dark" onclick="press('4')">4</button>
-    <button class="dark" onclick="press('5')">5</button>
-    <button class="dark" onclick="press('6')">6</button>
-    <button class="orange" onclick="press('-')">−</button>
-
-    <button class="dark" onclick="press('1')">1</button>
-    <button class="dark" onclick="press('2')">2</button>
-    <button class="dark" onclick="press('3')">3</button>
-    <button class="orange" onclick="press('+')">+</button>
-
-    <button class="dark zero" onclick="press('0')">0</button>
-    <button class="dark" onclick="press('.')">,</button>
-    <button class="orange" onclick="press('=')">=</button>
-  </div>
-</div>
-
-<script>
-let input="0", resultShown=false;
-
-const $=id=>document.getElementById(id);
-
-function pretty(s){
-  return s.replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−").replace(/\./g,",");
-}
-
-function refresh(){
-  $("display").textContent=pretty(input);
-  if(input==="0"){
-    $("counter").textContent="Введено чисел: 0";
-    $("sum").textContent="Сумма: 0";
-    return;
-  }
-  const parts=input.match(/[+-]?\d+(?:\.\d+)?/g)||[];
-  $("counter").textContent=`Введено чисел: ${parts.length}`;
-  try{
-    let total=parts.reduce((a,x)=>a+Number(x),0);
-    total=Number.isInteger(total)?total:Number(total.toFixed(6));
-    $("sum").textContent=`Сумма: ${String(total).replace(".",",")}`;
-  }catch{
-    $("sum").textContent="Сумма: 0";
-  }
-}
-
-function number(n){
-  if(input==="0"||resultShown){input=n;resultShown=false}
-  else input+=n;
-  refresh();
-}
-
-function decimal(){
-  if(resultShown){input="0.";resultShown=false;refresh();return}
-  const parts=input.split(/[+\-*\/%]/);
-  if(!parts[parts.length-1].includes(".")){
-    input += parts[parts.length-1]==="" ? "0." : ".";
-  }
-  refresh();
-}
-
-function operator(op){
-  resultShown=false;
-  let last=input.at(-1);
-  if(last==="."){input+="0";last="0"}
-  if("+-*/%".includes(last)) input=input.slice(0,-1)+op;
-  else input+=op;
-  refresh();
-}
-
-function calculate(){
-  try{
-    let expr=input;
-    if("+-*/.%".includes(expr.at(-1))) expr=expr.slice(0,-1);
-    if(!expr)expr="0";
-
-    $("history").textContent=pretty(expr)
-      .replace(/([×÷−+])/g," $1 ");
-
-    // Only expressions produced by the calculator buttons reach here.
-    let js=expr.replace(/%/g,"/100");
-    let value=Function('"use strict"; return ('+js+')')();
-    if(!Number.isFinite(value))throw new Error();
-    value=Number(value.toFixed(8));
-    input=String(value);
-    resultShown=true;
-    refresh();
-  }catch{
-    $("display").textContent="Ошибка";
-    $("counter").textContent="Введено чисел: 0";
-    $("sum").textContent="Сумма: 0";
-    input="0";
-  }
-}
-
-function back(){
-  if(resultShown){$("history").textContent="";resultShown=false}
-  input=input.length>1?input.slice(0,-1):"0";
-<!doctype html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Антон 29253 онлайн калькулятор</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;background:#000;color:#f5f5f7;font-family:Arial,sans-serif;overflow:hidden}
+html,body{margin:0;width:100%;height:100%;background:#000;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
 body{display:flex;justify-content:center}
-.app{width:min(100vw,560px);height:100dvh;padding:14px 18px max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column}
-.top{height:54px;display:flex;justify-content:space-between;align-items:flex-start;flex:none}
-.info{font-size:15px;line-height:1.55;color:#9a9a9f}
-.historyBtn{border:0;border-radius:18px;background:#242426;color:#eee;padding:11px 17px;font-size:14px;box-shadow:inset 0 1px rgba(255,255,255,.04);touch-action:manipulation}
-.historyMini{position:absolute;right:18px;top:70px;width:58%;max-height:72px;overflow:hidden;text-align:right;color:#666;font-size:14px;line-height:1.35;pointer-events:none}
-.displayWrap{flex:1;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.app{width:min(100vw,560px);height:100dvh;padding:14px 16px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column}
+.top{height:50px;display:flex;justify-content:space-between;align-items:flex-start;flex:none}
+.info{font-size:14px;line-height:1.4;color:#9a9a9f}
+.historyBtn{border:0;border-radius:18px;background:#242426;color:#eee;padding:10px 16px;font-size:14px;box-shadow:inset 0 1px rgba(255,255,255,.04);touch-action:manipulation}
+.historyMini{position:absolute;right:16px;top:65px;width:55%;max-height:60px;overflow:hidden;text-align:right;color:#666;font-size:13px;line-height:1.3;pointer-events:none}
+
+/* Адаптивный блок дисплея */
+.displayWrap{flex:1;min-height:120px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
 .displayScroller{height:100%;overflow-y:auto;overflow-x:hidden;display:flex;align-items:flex-end;touch-action:pan-y;scrollbar-width:none;padding:8px 0 0}
 .displayScroller::-webkit-scrollbar{display:none}
-.display{width:100%;text-align:right;font-weight:300;font-size:clamp(27px,7.2vw,39px);line-height:1.15;word-break:normal;overflow-wrap:anywhere;padding:0 2px 5px;user-select:none}
-.line{display:block;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:clip;min-height:1.15em}
+
+.display{
+  width:100%;
+  text-align:right;
+  font-weight:300;
+  /* Динамический размер текста под ширину экрана */
+  font-size:clamp(18px, 5vw, 32px);
+  line-height:1.3;
+  word-break:break-all;
+  overflow-wrap:anywhere;
+  padding:0 2px 5px;
+  user-select:none;
+}
+
+/* Строгая адаптация рядов */
+.line{
+  display:block;
+  white-space:normal;
+  max-width:100%;
+  word-break:break-all;
+  min-height:1.3em;
+  letter-spacing:0.5px;
+}
+
 .caret{display:inline-block;width:2px;height:.88em;background:#ff7a00;margin:0 1px;vertical-align:-.06em;border-radius:2px;animation:blink 1s step-end infinite}
 @keyframes blink{50%{opacity:0}}
-.intermediate{height:58px;flex:none;display:flex;justify-content:flex-end;align-items:flex-end;padding:0 8px 7px 0;overflow:hidden}
-.intermediateBox{width:76%;text-align:right;min-width:0}
-.intermediateExpr{font-size:14px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px}
-.intermediateResult{font-size:25px;color:#777;font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:29px}
-.keys{width:100%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:10px;height:min(49dvh,500px);min-height:370px;flex:none}
-button.key{border:0;min-width:0;min-height:0;border-radius:25px;background:#242426;color:#f4f4f4;font-size:clamp(20px,6vw,28px);font-family:Arial,sans-serif;box-shadow:inset 0 1px rgba(255,255,255,.025),0 2px 3px rgba(0,0,0,.5);touch-action:manipulation;transition:transform .07s,filter .07s}
+
+/* Промежуточный результат */
+.intermediate{height:48px;flex:none;display:flex;justify-content:flex-end;align-items:flex-end;padding:0 4px 4px 0;overflow:hidden}
+.intermediateBox{width:100%;text-align:right;min-width:0}
+.intermediateExpr{font-size:13px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:16px}
+.intermediateResult{font-size:clamp(18px,4.5vw,24px);color:#777;font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:26px}
+
+/* Клавиатура */
+.keys{width:100%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:8px;height:min(52dvh,480px);min-height:300px;flex:none}
+button.key{border:0;min-width:0;min-height:0;border-radius:22px;background:#242426;color:#f4f4f4;font-size:clamp(18px,5.5vw,26px);box-shadow:inset 0 1px rgba(255,255,255,.025),0 2px 3px rgba(0,0,0,.5);touch-action:manipulation;transition:transform .07s,filter .07s}
 button.key:active{transform:scale(.965);filter:brightness(1.25)}
 .key.orange{color:#ff7a00}
 .key.equals{background:#ff7a00;color:#fff;box-shadow:0 3px 8px rgba(255,122,0,.18)}
 .key.equals:active{filter:brightness(1.1)}
+
+/* Модальное окно */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.98);z-index:20;padding:20px 18px}
 .modal.show{display:flex;flex-direction:column}
 .modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.modalTitle{font-size:22px}
+.modalTitle{font-size:20px}
 .modalActions{display:flex;gap:7px}
 .smallBtn{border:0;border-radius:12px;background:#242426;color:#fff;padding:9px 12px;font-size:13px}
 .historyList{overflow:auto;flex:1}
-.historyItem{padding:14px 3px;border-bottom:1px solid #1c1c1e;text-align:right}
-.historyExpr{font-size:17px;color:#ddd;overflow-wrap:anywhere}
-.historyMeta{font-size:13px;color:#777;margin-top:5px}
+.historyItem{padding:12px 3px;border-bottom:1px solid #1c1c1e;text-align:right}
+.historyExpr{font-size:16px;color:#ddd;overflow-wrap:anywhere}
+.historyMeta{font-size:12px;color:#777;margin-top:4px}
 .empty{text-align:center;color:#555;margin-top:40px}
-@media(max-width:390px){
- .app{padding-left:14px;padding-right:14px}
- .keys{gap:8px;height:min(47dvh,455px);min-height:350px}
- button.key{border-radius:22px}
- .intermediate{height:54px}
- .intermediateResult{font-size:23px}
-}
-@media(min-width:600px){
- .app{padding-left:24px;padding-right:24px}
- .keys{gap:11px}
+
+@media(max-width:360px){
+  .app{padding-left:10px;padding-right:10px}
+  .keys{gap:6px}
+  button.key{border-radius:18px}
 }
 </style>
 </head>
@@ -289,6 +167,8 @@ function pretty(s){
   return String(s).replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−").replace(/\./g,",");
 }
 function numbers(s){return s.match(/\d+(?:\.\d*)?/g)||[]}
+
+/* Разбиение строго по 5 чисел в ряд */
 function buildLines(s){
   const re=/\d+(?:\.\d*)?|[+\-*/%]/g, tokens=[]; let m;
   while((m=re.exec(s))) tokens.push({text:m[0],start:m.index,end:m.index+m[0].length,isNum:/^\d/.test(m[0])});
@@ -300,6 +180,7 @@ function buildLines(s){
   if(line||!lines.length)lines.push({text:line,start,end:s.length});
   return lines;
 }
+
 function render(){
   const d=$("display"); d.innerHTML="";
   const lines=buildLines(input);
@@ -324,6 +205,7 @@ function render(){
   requestAnimationFrame(()=>{const sc=$("displayScroller");sc.scrollTop=sc.scrollHeight});
   updateInfo();updateIntermediate();save();
 }
+
 function updateInfo(){
   const ns=numbers(input);
   $("counter").textContent=`Введено чисел: ${ns.length}`;
@@ -331,6 +213,7 @@ function updateInfo(){
   $("sum").textContent=`Сумма: ${Number.isInteger(total)?total:Number(total.toFixed(6))}`.replace(".",",");
   $("historyMini").innerHTML=history.slice(0,3).map(x=>`<div>${x.expression} = ${x.result}</div>`).join("");
 }
+
 function evaluate(expr){
   let e=expr.replace(/([+\-*/%])$/,"");
   if(!e)e="0";
@@ -339,16 +222,19 @@ function evaluate(expr){
   if(!Number.isFinite(v))throw Error();
   return Number(Number(v).toFixed(8));
 }
+
 function updateIntermediate(){
   const ex=$("intermediateExpr"),res=$("intermediateResult");
   if(!input || !/[+\-*/%]/.test(input)){ex.textContent="";res.textContent="";return}
   try{ex.textContent=pretty(input);res.textContent="= "+pretty(evaluate(input));}
   catch{ex.textContent=pretty(input);res.textContent=""}
 }
+
 function insert(v){
   if(resultShown){input="";resultShown=false;cursorPos=0}
   input=input.slice(0,cursorPos)+v+input.slice(cursorPos);cursorPos+=v.length;render();
 }
+
 function press(v){
   if(v==="AC"){input="";cursorPos=0;resultShown=false;render();return}
   if(v==="back"){
@@ -362,12 +248,14 @@ function press(v){
   if(v==="."){decimal();return}
   operator(v);
 }
+
 function decimal(){
   if(resultShown){input="0.";cursorPos=2;resultShown=false;render();return}
   const left=input.slice(0,cursorPos),part=left.split(/[+\-*/%]/).pop();
   if(part.includes("."))return;
   insert(part===""?"0.":".");
 }
+
 function operator(op){
   if(resultShown){resultShown=false}
   if(!input){input="0";cursorPos=1}
@@ -376,6 +264,7 @@ function operator(op){
   else{input=input.slice(0,cursorPos)+op+input.slice(cursorPos);cursorPos++}
   render();
 }
+
 function toggleSign(){
   let a=input.slice(0,cursorPos),b=input.slice(cursorPos),m=a.match(/(?:^|[+\-*/%])(\d*\.?\d*)$/);
   if(!m||m[1]==="")return;
@@ -384,6 +273,7 @@ function toggleSign(){
   else{input=input.slice(0,start)+"-"+input.slice(start);cursorPos++}
   render();
 }
+
 function calculate(){
   if(!input)return;
   try{
@@ -394,14 +284,17 @@ function calculate(){
     input=String(value);cursorPos=input.length;resultShown=true;render();renderHistory();
   }catch{$("intermediateResult").textContent="Ошибка"}
 }
+
 function openHistory(){$("historyModal").classList.add("show");renderHistory()}
 function closeHistory(){$("historyModal").classList.remove("show")}
 function clearHistory(){history=[];save();renderHistory();updateInfo()}
+
 function renderHistory(){
   const list=$("historyList");
   if(!history.length){list.innerHTML='<div class="empty">История пуста</div>';return}
   list.innerHTML=history.map((x,i)=>`<div class="historyItem"><div class="historyExpr">${i+1}. ${x.expression} = ${x.result}</div><div class="historyMeta">Чисел: ${x.count} · ${x.time}</div></div>`).join("");
 }
+
 $("displayScroller").addEventListener("click",e=>{
   const sp=e.target.closest("[data-pos]");
   if(!sp)return;
@@ -409,9 +302,11 @@ $("displayScroller").addEventListener("click",e=>{
   cursorPos=Number(sp.dataset.pos)+(e.clientX-r.left>r.width/2?1:0);
   resultShown=false;render();
 });
+
 let touchStartY=0,touchStartScroll=0;
 $("displayScroller").addEventListener("touchstart",e=>{touchStartY=e.touches[0].clientY;touchStartScroll=$("displayScroller").scrollTop},{passive:true});
 $("displayScroller").addEventListener("touchmove",e=>{const dy=touchStartY-e.touches[0].clientY;$("displayScroller").scrollTop=touchStartScroll+dy},{passive:true});
+
 load();render();renderHistory();
 </script>
 </body>
