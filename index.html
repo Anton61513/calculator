@@ -26,19 +26,22 @@ body{display:flex;justify-content:center}
 
 .display{
   width:100%;
+  max-width:100%;
   text-align:right;
   font-weight:300;
   user-select:none;
 }
 
-/* Фиксированный ряд с подгонкой размера */
+/* Фиксированный ряд с защитой от вылезания за экран */
 .line{
   display:block;
   width:100%;
+  max-width:100%;
   white-space:nowrap;
   min-height:1.3em;
   letter-spacing:0.3px;
-  overflow:visible;
+  overflow:hidden;
+  word-break:break-all;
 }
 
 .caret{display:inline-block;width:2px;height:.85em;background:#ff7a00;margin:0 1px;vertical-align:-.05em;border-radius:2px;animation:blink 1s step-end infinite}
@@ -192,23 +195,29 @@ function render(){
     if(!last.querySelector(".caret")){const c=document.createElement("span");c.className="caret";last.appendChild(c)}
   }
 
-  adjustFontSize();
+  requestAnimationFrame(()=>{
+    adjustFontSize();
+    const sc=$("displayScroller");
+    sc.scrollTop=sc.scrollHeight;
+  });
 
-  requestAnimationFrame(()=>{const sc=$("displayScroller");sc.scrollTop=sc.scrollHeight});
   updateInfo();updateIntermediate();save();
 }
 
 function adjustFontSize(){
   const container=$("display");
-  const containerWidth=container.getBoundingClientRect().width - 8;
+  if(!container) return;
+  const containerWidth=container.clientWidth;
+  if(containerWidth <= 0) return;
+
   const lines=document.querySelectorAll(".line");
   
   lines.forEach(line=>{
     let fontSize=28;
     line.style.fontSize=fontSize+"px";
     
-    // Динамически уменьшаем шрифт ряда, пока он полностью не влезет в боковые границы
-    while((line.getBoundingClientRect().width > containerWidth || line.scrollWidth > containerWidth) && fontSize > 11){
+    // Постепенно уменьшаем шрифт, пока строка не перестанет вылезать по ширине
+    while(line.scrollWidth > containerWidth && fontSize > 10){
       fontSize-=0.5;
       line.style.fontSize=fontSize+"px";
     }
