@@ -45,7 +45,6 @@ body{display:flex;justify-content:center}
   user-select:none;
 }
 
-/* Фиксированный ряд с защитой от вылезания за экран */
 .line{
   display:block;
   width:100%;
@@ -57,7 +56,7 @@ body{display:flex;justify-content:center}
   word-break:break-all;
 }
 
-/* Выделение подозрительного числа */
+/* Виділення числа з 3+ цифрами після коми */
 .suspicious-num{
   border:2px solid #ff3b30;
   border-radius:6px;
@@ -68,7 +67,21 @@ body{display:flex;justify-content:center}
 }
 @keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(255,59,48,0.7)}70%{box-shadow:0 0 0 6px rgba(255,59,48,0)}100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}}
 
-.caret{display:inline-block;width:2px;height:.85em;background:#ff7a00;margin:0 1px;vertical-align:-.05em;border-radius:2px;animation:blink 1s step-end infinite}
+.char-span{
+  display:inline-block;
+  position:relative;
+}
+
+.caret{
+  display:inline-block;
+  width:2px;
+  height:.85em;
+  background:#ff7a00;
+  margin:0 1px;
+  vertical-align:-.05em;
+  border-radius:2px;
+  animation:blink 1s step-end infinite;
+}
 @keyframes blink{50%{opacity:0}}
 
 .intermediate{height:36px;flex:none;display:flex;justify-content:flex-end;align-items:center;padding:0 2px;overflow:hidden;width:100%}
@@ -105,7 +118,7 @@ button.key:active{transform:scale(.965);filter:brightness(1.25)}
     <div class="topRightWrap">
       <button class="historyBtn" onclick="openHistory()">История</button>
       <div class="suspiciousBox" id="suspiciousBox">
-        <div class="suspiciousTitle">⚠️ Число > 95 або >2 знаків:</div>
+        <div class="suspiciousTitle">⚠️ 3+ знаків після коми:</div>
         <div class="suspiciousValue" id="suspiciousValue">23,52396</div>
         <div class="suspiciousBtns">
           <button class="suspBtn confirm" onclick="confirmSuspicious()">Так, вірно</button>
@@ -187,14 +200,14 @@ function vibrate(ms=12){
 
 function save(){
   try{
-    localStorage.setItem("anton29253_state_v5",JSON.stringify({input,resultShown,cursorPos}));
-    localStorage.setItem("anton29253_history_v5",JSON.stringify(history));
+    localStorage.setItem("anton29253_state_v6",JSON.stringify({input,resultShown,cursorPos}));
+    localStorage.setItem("anton29253_history_v6",JSON.stringify(history));
   }catch(e){}
 }
 function load(){
   try{
-    const s=JSON.parse(localStorage.getItem("anton29253_state_v5")||"null");
-    const h=JSON.parse(localStorage.getItem("anton29253_history_v5")||"[]");
+    const s=JSON.parse(localStorage.getItem("anton29253_state_v6")||"null");
+    const h=JSON.parse(localStorage.getItem("anton29253_history_v6")||"[]");
     if(s){input=typeof s.input==="string"?s.input:"";resultShown=!!s.resultShown;cursorPos=Math.max(0,Math.min(input.length,Number(s.cursorPos)||0))}
     history=Array.isArray(h)?h:[];
   }catch(e){input="";history=[];cursorPos=0}
@@ -215,10 +228,8 @@ function pretty(s){
 }
 function numbers(s){return s.match(/\d+(?:\.\d*)?/g)||[]}
 
+// Перевірка: тільки якщо 3 або більше цифр після коми
 function isSuspicious(numStr){
-  const val = parseFloat(numStr);
-  if(isNaN(val)) return false;
-  if(val > 95) return true;
   const parts = numStr.split('.');
   if(parts.length > 1 && parts[1].length >= 3) return true;
   return false;
@@ -261,48 +272,44 @@ function render(){
     const div=document.createElement("div");div.className="line";
     
     item.tokens.forEach(t=>{
-      const spanContainer = document.createElement("span");
+      const tokenContainer = t.isSuspicious ? document.createElement("span") : div;
       if(t.isSuspicious){
-        spanContainer.className = "suspicious-num";
+        tokenContainer.className = "suspicious-num";
         if(!activeSuspicious) activeSuspicious = t;
       }
       
-      for(let i=0;i<t.text.length;i++){
+      for(let i=0; i<t.text.length; i++){
+        const pos = t.start + i;
+        if(cursorPos === pos){
+          const caret=document.createElement("span"); caret.className="caret";
+          tokenContainer.appendChild(caret);
+        }
+        
         const sp=document.createElement("span");
-        sp.dataset.pos=t.start+i;
+        sp.className="char-span";
+        sp.dataset.pos=pos;
         sp.textContent=pretty(t.text[i]);
-        spanContainer.appendChild(sp);
+        tokenContainer.appendChild(sp);
       }
-      div.appendChild(spanContainer);
+      
+      if(cursorPos === t.end){
+        const caret=document.createElement("span"); caret.className="caret";
+        tokenContainer.appendChild(caret);
+      }
+
+      if(t.isSuspicious){
+        div.appendChild(tokenContainer);
+      }
     });
 
-    if(cursorPos>=item.start && cursorPos<=item.end){
-      const caret=document.createElement("span");caret.className="caret";
-      let charCount = 0;
-      let inserted = false;
-      for(let child of div.childNodes){
-        let len = child.textContent.length;
-        if(cursorPos >= item.start + charCount && cursorPos <= item.start + charCount + len){
-          const innerIndex = cursorPos - (item.start + charCount);
-          if(child.nodeType === 1 && child.classList.contains('suspicious-num')){
-            child.insertBefore(caret, child.children[innerIndex]||null);
-          } else {
-            div.insertBefore(caret, child);
-          }
-          inserted = true;
-          break;
-        }
-        charCount += len;
-      }
-      if(!inserted) div.appendChild(caret);
-    }
     d.appendChild(div);
   });
 
   if(!input){
-    const last=d.lastElementChild||document.createElement("div");
-    if(!last.parentNode){last.className="line";d.appendChild(last)}
-    if(!last.querySelector(".caret")){const c=document.createElement("span");c.className="caret";last.appendChild(c)}
+    const div=document.createElement("div"); div.className="line";
+    const caret=document.createElement("span"); caret.className="caret";
+    div.appendChild(caret);
+    d.appendChild(div);
   }
 
   const suspBox = $("suspiciousBox");
@@ -483,7 +490,7 @@ function renderHistory(){
 
 $("displayScroller").addEventListener("click",e=>{
   const sp=e.target.closest("[data-pos]");
-  if(!sp)return;
+  if(!sp) return;
   const r=sp.getBoundingClientRect();
   cursorPos=Number(sp.dataset.pos)+(e.clientX-r.left>r.width/2?1:0);
   resultShown=false;render();
