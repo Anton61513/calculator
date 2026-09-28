@@ -13,11 +13,24 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;width:100%;height:100%;background:#000;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
 body{display:flex;justify-content:center}
-.app{width:100%;max-width:500px;height:100dvh;padding:12px 14px max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+.app{width:100%;max-width:500px;height:100dvh;padding:12px 14px max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;position:relative}
 
 .top{height:45px;display:flex;justify-content:space-between;align-items:flex-start;flex:none}
 .info{font-size:13px;line-height:1.3;color:#9a9a9f}
 .historyBtn{border:0;border-radius:16px;background:#242426;color:#eee;padding:8px 14px;font-size:13px;touch-action:manipulation}
+
+.topRightWrap{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.suspiciousBox{display:none;background:#2a1215;border:1px solid #ff3b30;border-radius:12px;padding:6px 10px;text-align:right;max-width:210px;animation:shake 0.3s ease-in-out}
+.suspiciousBox.show{display:block}
+.suspiciousTitle{font-size:11px;color:#ff6b63;font-weight:bold;margin-bottom:2px}
+.suspiciousValue{font-size:14px;color:#fff;font-weight:bold}
+.suspiciousBtns{display:flex;gap:6px;margin-top:4px;justify-content:flex-end}
+.suspBtn{border:0;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:bold;touch-action:manipulation}
+.suspBtn.confirm{background:#34c759;color:#fff}
+.suspBtn.fix{background:#ff3b30;color:#fff}
+
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
 .historyMini{position:absolute;right:14px;top:55px;width:50%;max-height:50px;overflow:hidden;text-align:right;color:#666;font-size:12px;line-height:1.2;pointer-events:none}
 
 .displayWrap{flex:1;min-height:80px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;width:100%}
@@ -44,13 +57,23 @@ body{display:flex;justify-content:center}
   word-break:break-all;
 }
 
+/* Выделение подозрительного числа */
+.suspicious-num{
+  border:2px solid #ff3b30;
+  border-radius:6px;
+  padding:0 3px;
+  background:rgba(255,59,48,0.2);
+  color:#fff!important;
+  animation:pulseRed 1.5s infinite;
+}
+@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(255,59,48,0.7)}70%{box-shadow:0 0 0 6px rgba(255,59,48,0)}100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}}
+
 .caret{display:inline-block;width:2px;height:.85em;background:#ff7a00;margin:0 1px;vertical-align:-.05em;border-radius:2px;animation:blink 1s step-end infinite}
 @keyframes blink{50%{opacity:0}}
 
-.intermediate{height:40px;flex:none;display:flex;justify-content:flex-end;align-items:flex-end;padding:0 2px 2px 0;overflow:hidden;width:100%}
+.intermediate{height:36px;flex:none;display:flex;justify-content:flex-end;align-items:center;padding:0 2px;overflow:hidden;width:100%}
 .intermediateBox{width:100%;text-align:right;min-width:0}
-.intermediateExpr{font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:14px}
-.intermediateResult{font-size:clamp(15px,3.8vw,20px);color:#777;font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:22px}
+.intermediateResult{font-size:clamp(20px,5.5vw,28px);color:#f5f5f7;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:30px}
 
 .keys{width:100%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:6px;height:min(48dvh,420px);min-height:260px;flex:none}
 button.key{border:0;min-width:0;min-height:0;border-radius:18px;background:#242426;color:#f4f4f4;font-size:clamp(16px,5vw,24px);box-shadow:inset 0 1px rgba(255,255,255,.025),0 2px 3px rgba(0,0,0,.5);touch-action:manipulation;transition:transform .07s,filter .07s,background .2s,color .2s}
@@ -79,7 +102,17 @@ button.key:active{transform:scale(.965);filter:brightness(1.25)}
       <div id="counter">Введено чисел: 0</div>
       <div id="sum">Сумма: 0</div>
     </div>
-    <button class="historyBtn" onclick="openHistory()">История</button>
+    <div class="topRightWrap">
+      <button class="historyBtn" onclick="openHistory()">История</button>
+      <div class="suspiciousBox" id="suspiciousBox">
+        <div class="suspiciousTitle">⚠️ Число > 95 або >2 знаків:</div>
+        <div class="suspiciousValue" id="suspiciousValue">23,52396</div>
+        <div class="suspiciousBtns">
+          <button class="suspBtn confirm" onclick="confirmSuspicious()">Так, вірно</button>
+          <button class="suspBtn fix" onclick="fixSuspicious()">Виправити</button>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="historyMini" id="historyMini"></div>
 
@@ -91,7 +124,6 @@ button.key:active{transform:scale(.965);filter:brightness(1.25)}
 
   <div class="intermediate">
     <div class="intermediateBox">
-      <div class="intermediateExpr" id="intermediateExpr"></div>
       <div class="intermediateResult" id="intermediateResult"></div>
     </div>
   </div>
@@ -142,8 +174,16 @@ let resultShown=false;
 let history=[];
 let clearConfirmState=false;
 let clearTimer=null;
+let confirmedSuspicious = new Set();
+let currentSuspiciousToken = null;
 
 const $=id=>document.getElementById(id);
+
+function vibrate(ms=12){
+  if(navigator.vibrate){
+    try{navigator.vibrate(ms);}catch(e){}
+  }
+}
 
 function save(){
   try{
@@ -175,38 +215,104 @@ function pretty(s){
 }
 function numbers(s){return s.match(/\d+(?:\.\d*)?/g)||[]}
 
+function isSuspicious(numStr){
+  const val = parseFloat(numStr);
+  if(isNaN(val)) return false;
+  if(val > 95) return true;
+  const parts = numStr.split('.');
+  if(parts.length > 1 && parts[1].length >= 3) return true;
+  return false;
+}
+
 function buildLines(s){
   const re=/\d+(?:\.\d*)?|[+\-*/%]/g, tokens=[]; let m;
-  while((m=re.exec(s))) tokens.push({text:m[0],start:m.index,end:m.index+m[0].length,isNum:/^\d/.test(m[0])});
-  const lines=[]; let line="", count=0, start=0;
-  for(const t of tokens){
-    if(t.isNum && count===5){lines.push({text:line,start,end:t.start});line="";count=0;start=t.start}
-    line+=t.text;if(t.isNum)count++;
+  while((m=re.exec(s))) {
+    const isNum = /^\d/.test(m[0]);
+    const susp = isNum && isSuspicious(m[0]) && !confirmedSuspicious.has(m.index + "_" + m[0]);
+    tokens.push({
+      text:m[0],
+      start:m.index,
+      end:m.index+m[0].length,
+      isNum:isNum,
+      isSuspicious: susp
+    });
   }
-  if(line||!lines.length)lines.push({text:line,start,end:s.length});
+  
+  const lines=[]; let line=[], count=0, start=0;
+  for(const t of tokens){
+    if(t.isNum && count===5){
+      lines.push({tokens:line,start,end:t.start});
+      line=[];count=0;start=t.start;
+    }
+    line.push(t);
+    if(t.isNum) count++;
+  }
+  if(line.length||!lines.length) lines.push({tokens:line,start,end:s.length});
   return lines;
 }
 
 function render(){
   const d=$("display"); d.innerHTML="";
   const lines=buildLines(input);
+  
+  let activeSuspicious = null;
+
   lines.forEach(item=>{
     const div=document.createElement("div");div.className="line";
-    for(let i=0;i<item.text.length;i++){
-      const sp=document.createElement("span");sp.dataset.pos=item.start+i;
-      sp.textContent=pretty(item.text[i]);div.appendChild(sp);
-    }
+    
+    item.tokens.forEach(t=>{
+      const spanContainer = document.createElement("span");
+      if(t.isSuspicious){
+        spanContainer.className = "suspicious-num";
+        if(!activeSuspicious) activeSuspicious = t;
+      }
+      
+      for(let i=0;i<t.text.length;i++){
+        const sp=document.createElement("span");
+        sp.dataset.pos=t.start+i;
+        sp.textContent=pretty(t.text[i]);
+        spanContainer.appendChild(sp);
+      }
+      div.appendChild(spanContainer);
+    });
+
     if(cursorPos>=item.start && cursorPos<=item.end){
       const caret=document.createElement("span");caret.className="caret";
-      const index=Math.max(0,Math.min(div.children.length,cursorPos-item.start));
-      div.insertBefore(caret,div.children[index]||null);
+      let charCount = 0;
+      let inserted = false;
+      for(let child of div.childNodes){
+        let len = child.textContent.length;
+        if(cursorPos >= item.start + charCount && cursorPos <= item.start + charCount + len){
+          const innerIndex = cursorPos - (item.start + charCount);
+          if(child.nodeType === 1 && child.classList.contains('suspicious-num')){
+            child.insertBefore(caret, child.children[innerIndex]||null);
+          } else {
+            div.insertBefore(caret, child);
+          }
+          inserted = true;
+          break;
+        }
+        charCount += len;
+      }
+      if(!inserted) div.appendChild(caret);
     }
     d.appendChild(div);
   });
+
   if(!input){
     const last=d.lastElementChild||document.createElement("div");
     if(!last.parentNode){last.className="line";d.appendChild(last)}
     if(!last.querySelector(".caret")){const c=document.createElement("span");c.className="caret";last.appendChild(c)}
+  }
+
+  const suspBox = $("suspiciousBox");
+  if(activeSuspicious){
+    currentSuspiciousToken = activeSuspicious;
+    $("suspiciousValue").textContent = pretty(activeSuspicious.text);
+    suspBox.classList.add("show");
+  } else {
+    currentSuspiciousToken = null;
+    suspBox.classList.remove("show");
   }
 
   requestAnimationFrame(()=>{
@@ -216,6 +322,24 @@ function render(){
   });
 
   updateInfo();updateIntermediate();save();
+}
+
+function confirmSuspicious(){
+  vibrate([15, 30, 15]);
+  if(currentSuspiciousToken){
+    confirmedSuspicious.add(currentSuspiciousToken.start + "_" + currentSuspiciousToken.text);
+    render();
+  }
+}
+
+function fixSuspicious(){
+  vibrate(30);
+  if(currentSuspiciousToken){
+    const {start, end} = currentSuspiciousToken;
+    input = input.slice(0, start) + input.slice(end);
+    cursorPos = start;
+    render();
+  }
 }
 
 function adjustFontSize(){
@@ -255,10 +379,10 @@ function evaluate(expr){
 }
 
 function updateIntermediate(){
-  const ex=$("intermediateExpr"),res=$("intermediateResult");
-  if(!input || !/[+\-*/%]/.test(input)){ex.textContent="";res.textContent="";return}
-  try{ex.textContent=pretty(input);res.textContent="= "+pretty(evaluate(input));}
-  catch{ex.textContent=pretty(input);res.textContent=""}
+  const res=$("intermediateResult");
+  if(!input || !/[+\-*/%]/.test(input)){res.textContent="";return}
+  try{res.textContent="= "+pretty(evaluate(input));}
+  catch{res.textContent=""}
 }
 
 function insert(v){
@@ -267,6 +391,8 @@ function insert(v){
 }
 
 function press(v){
+  vibrate(12);
+
   if(v!=="AC" && clearConfirmState){
     resetAcButton();
   }
@@ -281,6 +407,7 @@ function press(v){
       const btn=$("acBtn");
       btn.textContent="ТОЧНО?";
       btn.classList.add("danger");
+      vibrate([20, 40, 20]);
       clearTimer=setTimeout(()=>{
         resetAcButton();
       },3000);
@@ -339,9 +466,10 @@ function calculate(){
   }catch{$("intermediateResult").textContent="Ошибка"}
 }
 
-function openHistory(){$("historyModal").classList.add("show");renderHistory()}
-function closeHistory(){$("historyModal").classList.remove("show")}
+function openHistory(){vibrate(15);$("historyModal").classList.add("show");renderHistory()}
+function closeHistory(){vibrate(15);$("historyModal").classList.remove("show")}
 function clearHistory(){
+  vibrate(20);
   if(confirm("Очистить всю историю?")){
     history=[];save();renderHistory();updateInfo();
   }
